@@ -2,59 +2,62 @@ package com.github.jmtoball.kafka
 
 import java.util
 
-import scala.collection.JavaConversions._
-import org.apache.kafka.common.config.ConfigDef
-import org.apache.kafka.common.config.ConfigDef.Type
-import org.apache.kafka.common.config.ConfigDef.Range
-import org.apache.kafka.connect.connector.Task
-import org.apache.kafka.connect.source.SourceConnector
+import com.github.jmtoball.kafka.conf.{Config, ConnectorConfig}
+import org.apache.kafka.common.config.{AbstractConfig, ConfigDef}
 import org.apache.kafka.common.utils.AppInfoParser
+import org.apache.kafka.connect.connector.Task
 import org.apache.kafka.connect.errors.ConnectException
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.kafka.connect.source.SourceConnector
+
+import scala.collection.JavaConverters._
 
 class GitLogConnector extends SourceConnector {
-  private val logger: Logger = LoggerFactory.getLogger(classOf[GitLogConnector])
-
-  private var repoPaths: List[String] = _
+  private var paths: List[String] = _
   private var topic: String = _
-  private var interval: String = _
+  private var interval: Int = _
+  private var configReader: AbstractConfig = _
+  private var rewind: Boolean = _
+  private var pull: Boolean = _
 
   override def version(): String = AppInfoParser.getVersion
 
   override def start(props: util.Map[String, String]): Unit = {
-    topic = props.get("topic")
+    configReader = new ConnectorConfig(props)
+    topic = configReader.getString(Config.KEY_TOPIC)
     if (topic == null)
       throw new ConnectException("missing topic config value")
 
-    interval = props.get("interval")
-    if (interval == null)
-      throw new ConnectException("missing interval config value")
-    if (!interval.matches("""\d+"""))
-      throw new ConnectException("interval needs to be an integer value")
+    interval = configReader.getInt(Config.KEY_INTERVAL)
+    if (!interval.isValidInt)
+      throw new ConnectException("invalid interval config value")
 
-    val repoPathsString = props.get("repo.paths")
-    if (repoPathsString == null)
-      throw new ConnectException("missing repo.paths config value")
-    repoPaths = repoPathsString.split(",").toList
-    if (repoPaths.map(s => s.trim).exists(s => s.isEmpty))
-      throw new ConnectException("paths in repo.paths may not be empty")
+    paths = configReader.getList(Config.KEY_PATHS).asScala.toList
+    if (paths.isEmpty)
+      throw new ConnectException(s"${Config.KEY_PATHS} must contain at least one path")
+    if (paths.map(s => s.trim).exists(s => s.isEmpty))
+      throw new ConnectException(s"paths in ${Config.KEY_PATHS} must not be empty")
+
+    rewind = configReader.getBoolean(Config.KEY_REWIND)
+    pull = configReader.getBoolean(Config.KEY_PULL)
   }
 
   override def taskClass(): Class[_ <: Task] = classOf[GitLogTask]
 
   override def taskConfigs(i: Int): util.List[util.Map[String, String]] = {
-    repoPaths.map(p =>
-      new util.HashMap[String, String](Map("path" -> p, "topic" -> topic, "interval" -> interval))
-    )
+    paths.map(path =>
+      Map(
+        Config.KEY_PATH -> path,
+        Config.KEY_TOPIC -> topic,
+        Config.KEY_INTERVAL -> interval.toString,
+        Config.KEY_REWIND -> rewind.toString,
+        Config.KEY_PULL -> pull.toString
+      ).asJava
+    ).asJava
   }
 
   override def stop(): Unit = {}
 
   override def config(): ConfigDef = {
-    new ConfigDef()
-      .define("topic", Type.STRING, "git-log", ConfigDef.Importance.HIGH, "The topic to publish commits to")
-      .define("interval", Type.INT, 10000, Range.atLeast(0), ConfigDef.Importance.HIGH, "the interval in which to poll each for new commits")
-      .define("repo.paths", Type.STRING, "", ConfigDef.Importance.HIGH, "the repository paths to watch")
-
+    Config.connectorConfigDef
   }
 }
