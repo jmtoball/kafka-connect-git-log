@@ -23,7 +23,7 @@ class GitLogTask() extends SourceTask {
   private var interval: Int = _
   private var pull: Boolean = _
   private var rewind: Boolean = _
-  private var lastChecked: Long = new SystemTime().milliseconds()
+  private var lastChecked: Long = _
   private var lastVersion: Option[AnyObjectId] = None
   val git: GitWrapper = new GitWrapper
 
@@ -38,6 +38,7 @@ class GitLogTask() extends SourceTask {
     pull = config.getBoolean(Config.KEY_PULL)
     rewind = config.getBoolean(Config.KEY_REWIND)
     path = config.getString(Config.KEY_PATH)
+    lastChecked = new SystemTime().milliseconds()
     git.setPath(path)
   }
 
@@ -57,7 +58,7 @@ class GitLogTask() extends SourceTask {
     }
   }
 
-  val SCHEMA = SchemaBuilder
+  val SCHEMA: Schema = SchemaBuilder
     .struct()
     .name("gitCommit")
     .field("authorName", Schema.OPTIONAL_STRING_SCHEMA)
