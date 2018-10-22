@@ -106,7 +106,7 @@
                     <junitxml>.</junitxml>
                     <filereports>TestSuiteReport.txt</filereports>
                     <!-- Comma separated list of JUnit test class names to execute -->
-                    <jUnitClasses>com.github.jmtoball.kafka.GitLogTaskTest</jUnitClasses>
+                    <jUnitClasses>com.github.jmtoball.kafka.GitLogTaskTest,com.github.jmtoball.kafka.GitWrapperTest</jUnitClasses>
                 </configuration>
                 <executions>
                     <execution>

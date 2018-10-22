@@ -8,12 +8,11 @@ import org.eclipse.jgit.api.ResetCommand.ResetType
 import org.eclipse.jgit.lib.{AnyObjectId, Constants}
 import org.eclipse.jgit.revwalk.{RevCommit, RevSort, RevWalk}
 
-class GitWrapper {
+class GitWrapper(val open: String => Git = f => Git.open(new File(f))) {
   private var gitInstance: Git = _
 
   def setPath(path: String): Unit = {
-    println(s"setting path $path")
-    gitInstance = Git.open(new File(path))
+    gitInstance = open(path)
   }
 
   def version(): AnyObjectId = {

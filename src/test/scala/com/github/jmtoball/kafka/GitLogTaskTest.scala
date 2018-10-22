@@ -1,39 +1,24 @@
 package com.github.jmtoball.kafka
 
-import java.io.File
-import java.nio.file.Paths
 import java.time.Instant
-
-import org.scalatest._
 import java.util
 
-import scala.collection.JavaConverters._
 import com.github.jmtoball.kafka.conf.Config
 import org.apache.kafka.common.utils.SystemTime
 import org.apache.kafka.connect.data.Struct
-import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.internal.storage.file.FileRepository
 import org.eclipse.jgit.lib.{AnyObjectId, ObjectId}
-import org.eclipse.jgit.revwalk.RevWalk
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.junit.runner.RunWith
 import org.scalamock.scalatest.MockFactory
+import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 
+import scala.collection.JavaConverters._
+
 @RunWith(classOf[JUnitRunner])
-class GitLogTaskTest extends FunSpec with Matchers with MockFactory with BeforeAndAfter {
+class GitLogTaskTest extends FunSpec with Matchers with MockFactory with BeforeAndAfter with GitHelp {
   private val testPath = "foobar"
   private var gitAccessMock: GitWrapper = _
   private var task: GitLogTask = _
-
-
-  def createTestRepo(): Git = {
-    val tempDir = File.createTempFile("kafka-connect-git-log", "tmp")
-    tempDir.delete()
-    val tempGitDir = new File(tempDir.getAbsolutePath, ".git")
-    FileRepositoryBuilder.create(tempGitDir).create(false)
-    Git.open(tempDir)
-  }
 
   def props(overrides: Map[String, String]= Map()): util.Map[String, String] = {
     (Map(

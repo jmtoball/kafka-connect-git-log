@@ -25,7 +25,7 @@ class GitLogTask() extends SourceTask {
   private var rewind: Boolean = _
   private var lastChecked: Long = _
   private var lastVersion: Option[AnyObjectId] = None
-  val git: GitWrapper = new GitWrapper
+  val git: GitWrapper = new GitWrapper()
 
   override def stop(): Unit = {}
 
